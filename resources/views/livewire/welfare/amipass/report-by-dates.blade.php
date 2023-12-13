@@ -52,7 +52,7 @@
                     @if($user->shifts->count()==0)
                         
                     @if($user->ammount == $user->valor_debia_cargarse) <tr >
-                        @else <tr class="table-warning"> @endif
+                    @else <tr class="table-warning"> @endif
                         
                             <td>{{ $user->id }}</td>
                             <td>{{ $user->shortName }}</td>
@@ -128,7 +128,7 @@
                                     <li>Días hábiles en búsqueda: {{$user->businessDays}}</li>
                                     <li>Días descuento: {{ $user->totalAbsenteeismsEnBd }} => {{ $user->totalAbsenteeisms }}</li>
                                     <li>Días a pagar: {{$user->businessDays - $user->totalAbsenteeisms}}</li>
-                                    <li>Valor día: {{$this->dailyAmmount}}</li>
+                                    <li>Valor día: {{$user->dailyAmmount}}</li>
                                 </ul>
 
                                 
@@ -192,7 +192,7 @@
                             <td class="small">
                                 @foreach($user->shifts as $shift)
                                     <li>
-                                    {{ $shift->year }} - {{ $shift->monthName() }}: {{ $shift->quantity }} días * {{ money($shiftAmmount) }}
+                                    {{ $shift->year }} - {{ $shift->monthName() }}: {{ $shift->quantity }} días * {{ money($user->shiftAmmount) }}
                                     </li>
                                 @endforeach
                             </td>

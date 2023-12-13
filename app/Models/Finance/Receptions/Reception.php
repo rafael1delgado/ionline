@@ -82,11 +82,11 @@ class Reception extends Model
     * @var array
     */
     protected $casts = [
-        'date'      => 'date:Y-m-d',
-        'dte_date'  => 'date:Y-m-d',
+        'date'          => 'date:Y-m-d',
+        'dte_date'      => 'date:Y-m-d',
         'partial_reception' => 'boolean',
-        'status'    => 'boolean',
-        'rejected'    => 'boolean',
+        'status'        => 'boolean',
+        'rejected'      => 'boolean',
     ];
 
     public function receptionType(): BelongsTo
@@ -161,5 +161,20 @@ class Reception extends Model
     public function files(): MorphMany
     {
         return $this->morphMany(File::class, 'fileable');
+    }
+
+    /**
+     * Get signed file, legacy de cenabast.
+     */
+    public function signedFileLegacy(): MorphOne
+    {
+        return $this->morphOne(File::class, 'fileable')->where('type','signed_file');
+    }
+    /**
+     * Get support file, archivo de respaldo.
+     */
+    public function supportFile(): MorphOne
+    {
+        return $this->morphOne(File::class, 'fileable')->where('type','support_file');
     }
 }

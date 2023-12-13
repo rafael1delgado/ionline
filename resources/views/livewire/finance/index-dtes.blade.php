@@ -26,9 +26,9 @@
     @endif
 
 
-    <div class="form-row mb-3">
+    <div class="row g-2 mb-3">
         <div class="col-md-2">
-            <select class="form-control" wire:model.defer="filter.establishment">
+            <select class="form-select" wire:model.defer="filter.establishment">
                 <option value="">Todos los Establecimientos</option>
                 @foreach ($establishments as $name => $id)
                     <option value="{{ $name }}">{{ $id }}</option>
@@ -46,14 +46,14 @@
             <input type="text" class="form-control" wire:model.defer="filter.folio_oc" placeholder="oc">
         </div>
         <div class="col-md-2">
-            <select class="form-control" wire:model.defer="filter.folio_sigfe">
+            <select class="form-select" wire:model.defer="filter.folio_sigfe">
                 <option value="Todos">Todos</option>
                 <option value="Sin Folio SIGFE">Sin Folio SIGFE</option>
                 <option value="Con Folio SIGFE">Con Folio SIGFE</option>
             </select>
         </div>
         <div class="col-md-2">
-            <select class="form-control" wire:model.defer="filter.tipo_documento">
+            <select class="form-select" wire:model.defer="filter.tipo_documento">
                 <option value="">Todas</option>
                 <option value="factura_electronica">FE: Factura Electrónica</option>
                 <option value="factura_exenta">FE: Factura Exenta</option>
@@ -103,15 +103,13 @@
                         {{ $dte->id }}
                         <br>
                         @cannot('Payments: viewer')
-                            <div class="form-check">
-                                <input class="form-check-input position-static" style="scale: 1.5;" type="checkbox"
-                                    id="ids.{{ $dte->id }}" wire:model.defer="ids.{{ $dte->id }}">
-                            </div>
+                            <input class="form-check-input" style="scale: 1.5;" type="checkbox"
+                                id="ids.{{ $dte->id }}" wire:model.defer="ids.{{ $dte->id }}">
                         @endcannot
                     </td>
                     <td>
                         {{ $dte->establishment?->alias }}
-                    </td>                    
+                    </td>
                     <td class="small">
                         @include('finance.payments.partials.dte-info')
                     </td>
@@ -130,27 +128,9 @@
 
                             Todo lo anterior se reemplaza por recepciones (y)
                         -->
-                        @if($dte->purchaseOrder)
-                            @foreach($dte->purchaseOrder->receptions as $reception)
-                                @if($reception->numeration?->number )
-                                <a class="btn btn-sm btn-outline-primary" target="_blank"
-                                    href="{{ route('documents.partes.numeration.show_numerated', $reception->numeration) }}"
-                                    title="Recepcion Numerada">
-                                    <i class="fas fa-file"></i>
-                                </a>
-                                @endif
-                                @foreach($reception->files as $file)
-                                    <a href="{{ route('finance.receptions.support_document_download', $file->id) }}"
-                                        target="_blank">
-                                        <i class="fas fa-paperclip"></i>
-                                    </a>
-                                @endforeach
-                                
-                            @endforeach
-                        @endif
-
 
                         <!-- Punto 1 -->
+                        {{--
                         @if ($dte->cenabast_reception_file)
                             <a class="btn btn-sm btn-outline-primary" target="_blank"
                                 href="{{ route('warehouse.cenabast.download.signed', $dte) }}"
@@ -158,21 +138,30 @@
                                 <i class="fas fa-file"></i> CNB
                             </a>
                         @endif
+                        --}}
 
                         <!-- Punto 2 -->
                         <!-- Punto 3 -->
 
                         <!-- Esto ya no debería ir, está comentado -->
-                        {{-- @foreach ($dte->controls as $control)
+                        {{-- 
+                        @foreach ($dte->controls as $control)
                             <a class="btn btn-sm btn-outline-primary"
                                 href="{{ route('warehouse.control.show', $control) }}" target="_blank">
                                 #{{ $control->id }}
                             </a>
-                        @endforeach --}}
+                        @endforeach 
+                        --}}
+
+
+
+                        <!-- Nuevo módulo de Recepciones -->
+                        @include('finance.payments.partials.receptions-info')
+
                     </td>
                     <td class="small">
                         {{ $dte->requestForm?->contractManager?->tinnyName }} <br>
-                        {{ $dte->estado_reclamo }}                        
+                        {{ $dte->estado_reclamo }}
                     </td>
                     <td class="small">
                         {{ $dte->fecha_recepcion_sii ?? '' }} <br>
@@ -197,7 +186,7 @@
                     <tr>
                         <td colspan="11">
 
-                        <div class="form-row">
+                        <div class="row">
                                 <div class="form-group col-md-2">
                                     <label for="for_folio_oc">Folio OC</label>
                                     <input type="text" class="form-control" id="for_folio_oc"
@@ -257,39 +246,59 @@
                                 @case('factura_exenta')
                                 @case('boleta_honorarios')
                                 @case('boleta_electronica')
-                                    <div class="form-row">
+                                    <div class="row">
                                         <div class="col-10">
                                             @if($dte->purchaseOrder)
-                                                @foreach($dte->purchaseOrder->receptions->where('rejected','<>', '1') as $reception)
+                                                @foreach($dte->purchaseOrder->receptions as $reception)
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" value="" id="defaultCheck{{ $reception->id }}"
-                                                        wire:click="updateReceptionDteId({{ $reception->id }}, {{ $dte->id }})"
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            id="defaultCheck{{ $reception->id }}"
+                                                            @if($dte->id == $reception->dte_id)
+                                                                wire:click="updateReceptionDteId({{ $reception->id }}, null)"
+                                                                checked
+                                                            @else
+                                                                wire:click="updateReceptionDteId({{ $reception->id }}, {{ $dte->id }})"
+                                                            @endif
+                                                            @disabled($reception->dte_id AND $reception->dte_id != $dte->id)
                                                         >
                                                         <label class="form-check-label" for="defaultCheck1">
-                                                            <a href="{{ route('finance.receptions.show', $reception->id) }}"
-                                                                
-                                                                target="_blank">
-                                                                <b>Nº:</b> {{ $reception->numeration->number ?? 'Pendiente' }} 
-                                                                <b>Fecha:</b> {{ $reception->date?->format('Y-m-d') }}
-                                                            </a>
-                                                            @if($reception->numeration?->number)
-                                                                <a class="text-link" target="_blank"
-                                                                    href="{{ route('documents.partes.numeration.show_numerated', $reception->numeration) }}">
-                                                                    [ Ver ]
+                                                            @if($reception->dte_id AND $reception->dte_id != $dte->id)
+                                                                DTE: {{ $reception->dte_id }}
+                                                            @endif
+                                                
+                                                            @if($reception->signedFileLegacy)
+                                                                <a class="link-primary" href="{{ route('file.download', $reception->signedFileLegacy) }}" target="_blank">
+                                                                    id: {{ $reception->id }} Acta firmada (ex módulo Cenabast)
                                                                 </a>
+                                                            @else
+                                                                <a href="{{ route('finance.receptions.show', $reception->id) }}" target="_blank">
+                                                                    <b>Nº:</b> {{ $reception->numeration->number ?? 'Pendiente' }} 
+                                                                    <b>Fecha:</b> {{ $reception->date?->format('Y-m-d') }}
+                                                                </a>
+                                                                @if($reception->numeration?->number)
+                                                                    <a class="text-link" target="_blank"
+                                                                        href="{{ route('documents.partes.numeration.show_numerated', $reception->numeration) }}">
+                                                                        [ Ver ]
+                                                                    </a>
+                                                                @endif
                                                             @endif
                                                         </label>
+                                                        <br>
+
                                                     </div>
                                                 @endforeach
                                             @endif
                                         </div>
                                         <div class="col-2">
-                                            <button class="btn btn-success form-control" wire:click="updateAllReceptionsStatus({{ $dte->id }})">
+                                            <button class="btn btn-success form-control" 
+                                                wire:click="updateAllReceptionsStatus({{ $dte->id }})"
+                                                wire:loading.attr="disabled">
+                                                <i class="bi bi-currency-dollar"></i>
                                                 A revisión
                                             </button>
                                         </div>
                                     </div>
-                                    <hr>
                                     @break
                                 @case('guias_despacho')
                                 @case('nota_credito')
@@ -297,27 +306,35 @@
                                     @break
                             @endswitch
 
-
-    
                             <hr>
+
                             <h6>Rechazo</h6>
                             <ul>
                                 @if($dte->purchaseOrder)
-                                    @foreach($dte->purchaseOrder->receptions->where('rejected', '1') as $reception)
-                                        <li><b>Acta ID:</b> {{ $reception->id }}</li>
-                                        <li><b>Motivo Rechazo:</b> {{ $reception->rejected_notes }}</li>
+                                    @foreach($dte->purchaseOrder->rejections as $rejection)
+                                        <li>
+                                            <b>Acta ID:</b> {{ $rejection->id }}
+                                            <b>Creador:</b> {{ $rejection->creator->shortName }}<br>
+                                            <span class="text-danger"> 
+                                                <b>Motivo:</b>
+                                                {{ $rejection->rejected_notes }}
+                                            </span>
+                                        </li>
                                     @endforeach
                                 @endif
                             </ul>
-                            <div class="form-row">
+                            <div class="row">
 
                                 <div class="col-10">
-                                    <label for="">Motivo de rechazo Dte</label>
-                                    <input type="text" class="form-control" wire:model.defer="reason_rejection" 1>
+                                    <label for="">Motivo de rechazo DTE contabilidad</label>
+                                    <input type="text" 
+                                        class="form-control" 
+                                        wire:model.defer="reason_rejection">
                                 </div>
                                 <div class="col-2">
                                     <label for="">&nbsp;</label>
-                                    <button class="btn btn-danger form-control" wire:click="rejectDte({{ $dte->id }})">
+                                    <button class="btn btn-danger form-control" 
+                                        wire:click="rejectDte({{ $dte->id }})">
                                         Rechazar
                                     </button>
                                 </div>
@@ -336,18 +353,20 @@
     <div class="row">
         @cannot('Payments: viewer')
             <div class="col">
-                <div class="form-row">
+                <div class="row">
                     <div class="col-3">
-                        <select class="form-control" wire:model.defer="establishment_id">
+                        <select class="form-select" wire:model.defer="establishment_id">
                             <option value=""></option>
                             @foreach ($establishments as $name => $id)
                                 <option value="{{ $name }}">{{ $id }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <button class="btn btn-primary" wire:click="setEstablishment">
-                        Asignar establecimiento
-                    </button>
+                    <div class="col">
+                        <button class="btn btn-primary" wire:click="setEstablishment">
+                            Asignar establecimiento
+                        </button>
+                    </div>
                 </div>
             </div>
         @endcannot

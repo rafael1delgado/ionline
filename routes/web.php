@@ -16,6 +16,7 @@ use App\Http\Livewire\Welfare\Amipass\NewBeneficiaryRequest;
 use App\Http\Livewire\Warehouse\Invoices\InvoiceManagement;
 use App\Http\Livewire\Warehouse\Cenabast\CenabastIndex;
 use App\Http\Livewire\TicResources;
+use App\Http\Livewire\TestFileUpdateManager;
 use App\Http\Livewire\TestFileManager;
 use App\Http\Livewire\Summary\Template\ShowTemplate;
 use App\Http\Livewire\Sign\SignatureIndex;
@@ -42,7 +43,6 @@ use App\Http\Livewire\Parameters\Holidays;
 use App\Http\Livewire\Parameters\AccessLogIndex;
 use App\Http\Livewire\News\SearchNews;
 use App\Http\Livewire\News\CreateNews;
-use App\Http\Controllers\News\NewsController;
 use App\Http\Livewire\Lobby\MeetingMgr;
 use App\Http\Livewire\Inventory\Transfer;
 use App\Http\Livewire\Inventory\RemovalRequestMgr;
@@ -72,6 +72,7 @@ use App\Http\Livewire\Finance\Receptions\TypeMgr;
 use App\Http\Livewire\Finance\Receptions\IndexReception;
 use App\Http\Livewire\Finance\Receptions\CreateRejection;
 use App\Http\Livewire\Finance\Receptions\CreateReception;
+use App\Http\Livewire\Finance\Receptions\CreateReceptionNoOc;
 use App\Http\Livewire\Finance\IndexDtes;
 use App\Http\Livewire\Finance\DteConfirmation;
 use App\Http\Livewire\Finance\AccountingCodesMgr;
@@ -224,6 +225,7 @@ use App\Http\Controllers\Parameters\EstablishmentTypeController;
 use App\Http\Controllers\Parameters\EstablishmentController;
 use App\Http\Controllers\Parameters\CommuneController;
 use App\Http\Controllers\Parameters\BudgetItemController;
+use App\Http\Controllers\News\NewsController;
 use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\Mammography\MammographyController;
 use App\Http\Controllers\Lobby\MeetingController;
@@ -249,6 +251,7 @@ use App\Http\Controllers\Finance\Receptions\ReceptionController as FinReceptionC
 use App\Http\Controllers\Finance\PurchaseOrderController;
 use App\Http\Controllers\Finance\PaymentController;
 use App\Http\Controllers\Finance\DteController;
+use App\Http\Controllers\FileController;
 use App\Http\Controllers\Drugs\SubstanceController;
 use App\Http\Controllers\Drugs\RosterAnalisisToAdminController;
 use App\Http\Controllers\Drugs\ReceptionController;
@@ -279,7 +282,7 @@ use App\Http\Controllers\Agreements\SignerController;
 use App\Http\Controllers\Agreements\ProgramResolutionController;
 use App\Http\Controllers\Agreements\AgreementController;
 use App\Http\Controllers\Agreements\AddendumController;
-use App\Http\Livewire\TestFileUpdateManager;
+use App\Http\Controllers\IdentifyNeeds\IdentifyNeedController;
 
 /*
 |--------------------------------------------------------------------------
@@ -296,9 +299,6 @@ Route::get('/', function () {
     return view('layouts.bt4.welcome');
 })->name('welcome');
 
-Route::get('/mailable', function () {
-    // auth()->user()->notify(new App\Notifications\Signatures\SignedDocument(App\Models\Documents\Signature::find(24587)));
-});
 
 Route::get('/claveunica/callback', [ClaveUnicaController::class, 'callback'])->name('claveunica.callback');
 Route::get('/claveunica/callback-testing', [ClaveUnicaController::class, 'callback']);
@@ -430,6 +430,7 @@ Route::prefix('replacement_staff')->as('replacement_staff.')->middleware(['auth'
         Route::get('/to_select/{requestReplacementStaff}', [RequestReplacementStaffController::class, 'to_select'])->name('to_select');
         Route::get('/to_sign_index', [RequestReplacementStaffController::class, 'to_sign_index'])->name('to_sign_index');
         Route::get('/to_sign/{requestReplacementStaff}', [RequestReplacementStaffController::class, 'to_sign'])->name('to_sign');
+        Route::get('/to_sign_approval/{request_replacement_staff_id}', [RequestReplacementStaffController::class, 'to_sign_approval'])->name('to_sign_approval');
         Route::get('/show_file/{requestReplacementStaff}', [RequestReplacementStaffController::class, 'show_file'])->name('show_file');
         Route::get('/download/{requestReplacementStaff}', [RequestReplacementStaffController::class, 'download'])->name('download');
         Route::get('/show_file_position/{position}', [RequestReplacementStaffController::class, 'show_file_position'])->name('show_file_position');
@@ -666,6 +667,7 @@ Route::prefix('agreements')->as('agreements.')->middleware(['auth', 'must.change
     Route::post('/addendum/createWord/{addendum}/type/{type}', [WordTestController::class, 'createWordDocxAddendum'])->name('addendum.createWord');
     Route::post('/addendum/createWordWithdrawal/{addendum}/type/{type}', [WordWithdrawalAgreeController::class, 'createWordDocxAddendum'])->name('addendum.createWordWithdrawal');
     Route::get('/addendum/downloadRes/{addendum}', [AddendumController::class, 'downloadRes'])->name('addendum.downloadRes');
+    Route::get('/addendum/download/{addendum}', [AddendumController::class, 'download'])->name('addendum.download');
     Route::get('/addendum/sign/{addendum}/type/{type}', [AddendumController::class, 'sign'])->name('addendum.sign');
     Route::get('/addendum/preview/{addendum}', [AddendumController::class, 'preview'])->name('addendum.preview');
     Route::resource('programs', App\Http\Controllers\Agreements\ProgramController::class);
@@ -2022,7 +2024,6 @@ Route::prefix('finance')->as('finance.')->middleware(['auth', 'must.change.passw
 
     Route::get('/{dte}/download', [DteController::class, 'downloadManualDteFile'])->name('dtes.downloadManualDteFile');
 
-    Route::get('dte/pending-receipt-certificate/{tray?}', [DteController::class, 'pendingReceiptCertificate'])->name('dtes.pendingReceiptCertificate');
     Route::post('dte/save-file/{dte}', [DteController::class, 'saveFile'])->name('dtes.saveFile');
 
     Route::get('dtes/upload', UploadDtes::class)->name('dtes.upload');
@@ -2046,10 +2047,10 @@ Route::prefix('finance')->as('finance.')->middleware(['auth', 'must.change.passw
     Route::prefix('receptions')->as('receptions.')->group(function () {
         Route::get('/', IndexReception::class)->name('index');
         Route::get('/create/{reception_id?}', CreateReception::class)->name('create');
+        Route::get('/create_no_oc/{reception_id?}', CreateReceptionNoOc::class)->name('create_no_oc');
         Route::get('/reject', CreateRejection::class)->name('reject');
         Route::get('/type', TypeMgr::class)->name('type');
         Route::get('/{reception_id}', [FinReceptionController::class,'show'])->name('show');
-        Route::get('/support_document_download/{file}',  [FinReceptionController::class, 'support_document_download'])->name('support_document_download');
     });
 });
 
@@ -2558,13 +2559,23 @@ Route::prefix('his')->as('his.')->middleware('auth')->group(function () {
     });
 });
 
-/*
 Route::prefix('news')->as('news.')->middleware(['auth', 'must.change.password'])->group(function () {
-    Route::get('/', CreateNews::class)->name('create');
+    //Route::get('/create', CreateNews::class)->name('create');
     Route::get('/index', SearchNews::class)->name('index');
+    Route::get('/own_index', SearchNews::class)->name('own_index')->middleware(['permission:News: create']);
+    // Route::get('/edit_news/{news_id}', CreateNews::class)->name('edit_news');
+    Route::get('/create', [NewsController::class, 'create'])->name('create')->middleware(['permission:News: create']);
     Route::get('/show/{news}', [NewsController::class, 'show'])->name('show');
+    Route::get('/edit/{news}', [NewsController::class, 'edit'])->name('edit')->middleware(['permission:News: create']);
+    Route::get('/view_image/{news}', [NewsController::class, 'view_image'])->name('view_image');
 });
-*/
+
+Route::prefix('identify_need')->as('identify_need.')->middleware(['auth', 'must.change.password'])->group(function () {
+    Route::get('/', [IdentifyNeedController::class, 'index'])->name('index')->middleware(['permission:Identify Need: create']);
+    Route::get('/own_index', [IdentifyNeedController::class, 'own_index'])->name('own_index')->middleware(['permission:Identify Need: create']);
+    Route::get('/create', [IdentifyNeedController::class, 'create'])->name('create')->middleware(['permission:Identify Need: create']);
+    Route::get('/edit/{identifyNeed}', [IdentifyNeedController::class, 'edit'])->name('edit')->middleware(['permission:News: create']);
+});
 
 /** RUTAS PARA EXTERNAL  */
 Route::group(['middleware' => 'auth:external'], function () {
@@ -2605,7 +2616,8 @@ Route::group(['middleware' => 'auth:external'], function () {
 });
 
 
-
+/* Modelo File, para descarga generica */
+Route::get('/file/{file}/download', [FileController::class, 'download'])->name('file.download');
 
 /** Test Routes */
 Route::view('/some', 'some');

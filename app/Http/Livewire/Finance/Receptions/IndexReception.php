@@ -15,9 +15,9 @@ class IndexReception extends Component
     
     public $filter_id;
     public $filter_purchase_order;
-    public $filter_number;
-    public $filter_user_responsible_id;
+    public $filter_reception_type_id;
     public $filter_date;
+    public $filter_number;
     public $types;
 
     /**
@@ -26,7 +26,7 @@ class IndexReception extends Component
     public function mount()
     {
         $this->types = ReceptionType::where('establishment_id',auth()->user()->organizationalUnit->establishment_id)
-        ->pluck('name','id')->toArray();
+            ->pluck('name','id')->toArray();
     }
 
     public function render()
@@ -43,7 +43,6 @@ class IndexReception extends Component
             ->with([
                 'items',
                 'purchaseOrder',
-                'receptionType',
                 'responsable',
                 'approvals',
                 'approvals.approver',
@@ -53,8 +52,11 @@ class IndexReception extends Component
                 'approvals.sentToUser',
                 'numeration',
                 'files',
+                'supportFile',
+                'signedFileLegacy',
             ])
-            ->where('creator_id', auth()->id())
+            //->where('creator_id', auth()->id())
+            ->where('establishment_id', auth()->user()->organizationalUnit->establishment_id)
             ->orderByDesc('id')
             ->when($this->filter_id, function($query) {
                 $query->where('id', $this->filter_id);
@@ -62,11 +64,11 @@ class IndexReception extends Component
             ->when($this->filter_purchase_order, function($query) {
                 $query->where('purchase_order', $this->filter_purchase_order);
             })
+            ->when($this->filter_reception_type_id, function($query) {
+                $query->where('reception_type_id', $this->filter_reception_type_id);
+            })
             ->when($this->filter_number, function($query) { 
                 $query->where('number', $this->filter_number);
-            })
-            ->when($this->filter_user_responsible_id, function($query) {
-                $query->where('user_responsible_id', $this->filter_user_responsible_id);
             })
             ->when($this->filter_date, function($query) {
                 $query->where('date', $this->filter_date);

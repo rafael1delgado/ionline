@@ -66,9 +66,9 @@
                     <th>ID</th>
                     <th>OC</th>
                     <th>Proveedor</th>
-                    <th>Tipo</th>
                     <th>Items</th>
                     <th>Total</th>
+                    <th>Responsable</th>
                     <th>Fecha Recepción</th>
                     <th>Orig.</th>
                     <th>Aprobaciones</th>
@@ -90,14 +90,15 @@
                             nowrap>
                             {{ $reception->id }}
                         </td>
-                        <td>
+                        <td nowrap>
                             {{ $reception->purchase_order }}
                         </td>
                         <td>
-                            {{ $reception->purchaseOrder?->json->Listado[0]->Proveedor->Nombre }}
-                        </td>
-                        <td>
-                            {{ $reception->receptionType?->name }}
+                            @if($reception->purchaseOrder)
+                                {{ $reception->purchaseOrder?->json->Listado[0]->Proveedor->Nombre }}
+                                @else
+                                {{ $reception->dte->razon_social_emisor }}
+                            @endif
                         </td>
                         <td class="text-center">
                             {{ $reception->items->count() }} 
@@ -105,15 +106,32 @@
                         <td class="text-end" nowrap>
                             $ {{ money($reception->total) }}
                         </td>
+                        <td>
+                            {{ $reception->responsable?->shortName }}
+                        </td>
                         <td class="text-center">
                             {{ $reception->date?->format('Y-m-d') }}
                         </td>
                         <td>
-                            <a href="{{ route('finance.receptions.show', $reception->id) }}"
-                                class="btn btn-outline-success"
-                                target="_blank">
-                                <i class="bi bi-file-pdf-fill"></i>
-                            </a>
+                            @if($reception->rejected == false)
+                                @if($reception->purchase_order)
+                                    @if($reception->signedFileLegacy)
+                                        <a href="{{ route('file.download', $reception->signedFileLegacy) }}"
+                                            class="btn btn-outline-secondary"
+                                            target="_blank">
+                                            <i class="bi bi-file-pdf-fill"></i>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('finance.receptions.show', $reception->id) }}"
+                                            class="btn btn-outline-success"
+                                            target="_blank">
+                                            <i class="bi bi-file-pdf-fill"></i>
+                                        </a>
+                                    @endif
+                                    @else
+                                    <i class="bi bi-file-pdf-fill">soy sin OC</i>
+                                @endif
+                            @endif
                         </td>
                         <td>
                             @if($reception->rejected)
@@ -145,26 +163,30 @@
                                 @endforeach
                             @endif
                         </td>
+                        <td nowrap>
+                            @if($reception->rejected == false)
+                                @if ($reception->numeration and $reception->numeration->number)
+                                    <a class="btn btn-outline-danger" href="{{ route('documents.partes.numeration.show_numerated', $reception->numeration) }}" target="_blank">
+                                        <i class="bi bi-file-pdf"></i>  {{ $reception->numeration->number }}
+                                    </a>
+                                @endif
+                            @endif
+                        </td>
                         <td>
-                            @if ($reception->numeration and $reception->numeration->number)
-                                <a class="btn btn-outline-danger" href="{{ route('documents.partes.numeration.show_numerated', $reception->numeration) }}" target="_blank">
-                                    <i class="bi bi-file-pdf"></i>  {{ $reception->numeration->number }}
+                            @if($reception->supportFile)
+                                <a href="{{ route('file.download', $reception->supportFile) }}"
+                                    target="_blank">
+                                    <i class="fas fa-paperclip"></i>
                                 </a>
                             @endif
                         </td>
                         <td>
-                            @foreach($reception->files->where('type','support_documents') as $file)
-                                <a href="{{ route('finance.receptions.support_document_download', $file->id) }}"
-                                    target="_blank">
-                                    <i class="fas fa-paperclip"></i>
+                            @if($reception->rejected == false)
+                                <a href="{{ route('finance.receptions.create', $reception) }}"
+                                    class="btn btn-primary">
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
-                            @endforeach
-                        </td>
-                        <td>
-                            <a href="{{ route('finance.receptions.create', $reception) }}"
-                                class="btn btn-primary">
-                                <i class="bi bi-pencil-square"></i>
-                            </a>
+                            @endif
                         </td>
                     </tr>
 

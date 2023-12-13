@@ -157,11 +157,12 @@
 
                         @if(auth()->user()->organizationalUnit->establishment_id != 1)
 
-                        @canany(['Purchase Plan: create', 'Purchase Plan: all'])
+                        @php($ouSearch = App\Models\Parameters\Parameter::where('module', 'nav')->where('parameter', 'accessPP')->first()->value)
+                        @if(auth()->user()->organizationalUnit && in_array(auth()->user()->organizationalUnit->establishment_id, explode(',', $ouSearch)))
                         <a class="dropdown-item {{ active('purchase_plan.own_index') }}" href="{{ route('purchase_plan.own_index') }}">
                             <i class="fas fa-fw fa-shopping-cart"></i> Plan de Compras
                         </a>
-                        @endcanany
+                        @endif
 
                         @php($ouSearch = App\Models\Parameters\Parameter::where('module', 'nav')->where('parameter', 'accessRF')->first()->value)
                         @if(auth()->user()->organizationalUnit && in_array(auth()->user()->organizationalUnit->establishment_id, explode(',', $ouSearch)))
@@ -490,7 +491,7 @@
                             Auth::user()->can('Replacement Staff: view requests')
                         )
                         <a class="dropdown-item {{ active('replacement_staff.request.own_index') }}" href="{{ route('replacement_staff.request.own_index') }}">
-                            <i class="far fa-id-card"></i> Solicitudes de Contratación
+                            <i class="far fa-id-card fa-fw"></i> Solicitudes de Contratación
                         </a>
                         @endif
 
@@ -505,6 +506,12 @@
                             <i class="fas fa-id-badge fa-fw"></i> Perfil de Cargos
                         </a>
                         @endif
+
+                        {{-- @if(Auth::user()->manager->count() > 0)
+                        <a class="dropdown-item {{ active('identify_need.own_index') }}" href="{{ route('identify_need.own_index') }}">
+                            <i class="fas fa-chalkboard-teacher fa-fw"></i> Detección de Necesidades
+                        </a>
+                        @endif --}}
 
                         @endif
 
@@ -803,6 +810,13 @@
                         </a>
                         @endrole
 
+                        @can('News: create')
+                        <div class="dropdown-divider"></div>
+
+                        <a class="dropdown-item" href="{{ route('news.create') }}">
+                            <i class="far fa-newspaper"></i> Noticias
+                        </a>
+                        @endcan
 
                         <div class="dropdown-divider"></div>
 

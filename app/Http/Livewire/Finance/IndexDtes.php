@@ -90,6 +90,7 @@ class IndexDtes extends Component
         $query->with([
             'purchaseOrder',
             'purchaseOrder.receptions',
+            'purchaseOrder.rejections',
             'establishment',
             'controls',
             'requestForm',
@@ -175,6 +176,14 @@ class IndexDtes extends Component
         ]);
         $dte->invoices()->sync($this->asociate_invoices);
 
+        
+        if($dte->receptions->first() and $dte->invoices->first())
+        {            
+            //Una guía tiene una o mas recepciones, buscar las facturas asociadas a esa guía y a esa factura asociarle la recepción de la guia
+            $dte->receptions->first()->dte_id = $dte->invoices->first()->id;
+            $dte->receptions->first()->save();
+        }
+
 
         if (
             $dte->confirmation_status !== null &&
@@ -199,8 +208,7 @@ class IndexDtes extends Component
                     'upload_user_id' => $dte->upload_user_id,
                     'cenabast_signed_pharmacist' => $dte->cenabast_signed_pharmacist,
                     'cenabast_signed_boss' => $dte->cenabast_signed_boss,
-
-                ]);
+                ]);                
             }
         }
         $this->showEdit = null;
@@ -255,11 +263,11 @@ class IndexDtes extends Component
         return view('livewire.finance.index-dtes', [
             'dtes' => $dtes,
             //'establishments' => $establishments,
-        ])->extends('layouts.bt4.app');
+        ]);
     }
 
 
-    public function updateReceptionDteId($receptionId, $dteId)
+    public function updateReceptionDteId($receptionId, $dteId = null)
     {
         $reception = Reception::find($receptionId);
         if ($reception) {
